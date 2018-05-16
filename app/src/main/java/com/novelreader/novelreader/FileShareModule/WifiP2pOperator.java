@@ -27,6 +27,9 @@ public class WifiP2pOperator implements WifiP2pManager.ChannelListener, WifiP2pM
     private Notifier mNotifier = null;
 
     private boolean isConnected = false;
+    private WifiP2pDevice connectedDevice=null;
+
+
     private boolean isOpen = false;
 
     private boolean isGroupOwner = false;
@@ -78,7 +81,7 @@ public class WifiP2pOperator implements WifiP2pManager.ChannelListener, WifiP2pM
         return mDeviceList;
     }
 
-    public void connectWith(WifiP2pDevice d) {
+    public void connectWith(final WifiP2pDevice d) {
 
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = d.deviceAddress;
@@ -86,12 +89,14 @@ public class WifiP2pOperator implements WifiP2pManager.ChannelListener, WifiP2pM
         mManager.connect(mChannel, config, new WifiP2pManager.ActionListener() {
             @Override
             public void onSuccess() {
-
+                isConnected=true;
+                connectedDevice=d;
             }
 
             @Override
             public void onFailure(int i) {
-
+                isConnected=false;
+                connectedDevice=null;
             }
         });
 
@@ -185,7 +190,6 @@ public class WifiP2pOperator implements WifiP2pManager.ChannelListener, WifiP2pM
         if (wifiP2pInfo.groupFormed) {
             isGroupOwner = wifiP2pInfo.isGroupOwner;
             groupOwnerIp = wifiP2pInfo.groupOwnerAddress.getHostAddress();
-            isConnected = true;
 
             mNotifier.notifyConnected();
         }

@@ -188,7 +188,7 @@ public class FileTransferService extends IntentService {
                         sendLength+=length;
                         progress = sendLength*100/file.length();
 
-                        if(preProgress-progress >= 1) {
+                        if(progress-preProgress >= 1) {
                             Log.i(TAG, "receiveFile: update progress["+progress+"] length["+length+"]"+"fileLength ["+file.length()+"]");
 
                             progressUpdate((int) progress);
@@ -250,7 +250,7 @@ public class FileTransferService extends IntentService {
             server.bind(new InetSocketAddress(FILE_TRANSFER_PORT));
 
             while (true) {
-                Log.i(TAG, "receiveFile: Server open accept");
+                Log.i(TAG, "receiveFile: Server open accepting");
                 socket = server.accept();
                 Log.i(TAG, "receiveFile: accepted");
 
@@ -291,9 +291,6 @@ public class FileTransferService extends IntentService {
 
                     receiveLength+=length;
                     progress = receiveLength * 100 / fileLength;
-
-
-
 
                     //reduce the number of the sending of broadcast
                     if(progress-preProgress >=1) {

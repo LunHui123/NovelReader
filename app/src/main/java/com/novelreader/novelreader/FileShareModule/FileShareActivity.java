@@ -47,6 +47,9 @@ public class FileShareActivity
     public static final String PROGRESS_UPDATE="android.intent.action.PROGRESS_UPDATE";
     public static final String PROGRESS_CLOSE="android.intent.action.PROGRESS_CLOSE";
 
+    public static final String IS_EXTRA_DATA="is_extra_data";
+    public static final String FILE_LIST="file_list";
+
     //动态申请sd卡写权限
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static String[] PERMISSIONS_STORAGE = {
@@ -63,7 +66,6 @@ public class FileShareActivity
     private Set<String> filePathsSet=new HashSet<String>();
 
     private ListView fileListView = null;
-    private List<String> removeList = new ArrayList<String>();
 
     //用于显示wifip2p搜索到的设备
     private ListView deviceListView=null;
@@ -82,6 +84,8 @@ public class FileShareActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_file_share);
+
+        initData();
 
         //增加或删除要发送的文件
         Button btnAddFile = (Button) findViewById(R.id.btnAddFile);
@@ -105,6 +109,17 @@ public class FileShareActivity
         dynamicPermissionRequest();
 
 
+    }
+
+    private void initData(){
+        Bundle bundle=getIntent().getExtras();
+        if(bundle==null) return;
+        Boolean in=bundle.getBoolean(IS_EXTRA_DATA,false);
+        if(in){
+            List<String> s=bundle.getStringArrayList(FILE_LIST);
+            if(s!=null)
+                filePaths.addAll(s);
+        }
     }
 
     private void initFileListView(){
@@ -151,7 +166,6 @@ public class FileShareActivity
                 mBroadcastReceiver.setProgressHandle(new ProgressDialogHandle() {
                     @Override
                     public void showProgressDialog(Intent intent) {
-
                         popupWindow.dismiss();
 
                         Log.i(TAG, "showProgressDialog: ");
@@ -164,6 +178,7 @@ public class FileShareActivity
                             title="Receiving";
                             message="Prepare Recviving Files";
                         }
+                        
 
                        progressDialog=new ProgressDialog(FileShareActivity.this);
                        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
@@ -176,6 +191,7 @@ public class FileShareActivity
 
                     @Override
                     public void updateProgressDialog(Intent intent) {
+
 
 
                         int count = intent.getIntExtra("COUNT",0);
@@ -206,7 +222,7 @@ public class FileShareActivity
                     public void closeProgressDialog(Intent intent) {
                         Log.i(TAG, "closeProgressDialog: ");
 
-                        mWifiP2pOperator.disconnect();
+                        //mWifiP2pOperator.disconnect();
 
                         progressDialog.dismiss();
 
@@ -221,7 +237,7 @@ public class FileShareActivity
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 progressDialog.dismiss();
 
-
+                                restartActivity();
                             }
                         });
 
@@ -231,6 +247,22 @@ public class FileShareActivity
                     }
                 });
             }
+    }
+
+    private void restartActivity(){
+        mWifiP2pOperator.close();
+
+        Log.i(TAG, "restartActivity: ");
+        Intent intent=new Intent(FileShareActivity.this,FileShareActivity.class);
+        Bundle bundle=new Bundle();
+        bundle.putBoolean(IS_EXTRA_DATA,true);
+        bundle.putStringArrayList(FILE_LIST,new ArrayList<String>(filePaths));
+        intent.putExtras(bundle);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+
+        startActivity(intent);
+        overridePendingTransition(0,0);
+        FileShareActivity.this.finish();
     }
 
     @Override
@@ -279,12 +311,6 @@ public class FileShareActivity
                 startActivityForResult(i, REQUEST_CODE_FOR_FILE_CHOOSE);
             }
             break;
-            /*
-            case R.id.btnRemoveFile: {
-                removeFileFromListView();
-            }
-            break;
-            */
             case R.id.btnSend:{
                 if(filePaths==null || filePaths.isEmpty()){
                     Toast.makeText(this,"Please choose File",Toast.LENGTH_SHORT).show();
@@ -367,7 +393,9 @@ public class FileShareActivity
 
             isClient=true;
 
-            mWifiP2pOperator.connectWith(peers.get(i));
+            WifiP2pDevice device=new WifiP2pDevice(peers.get(i));
+
+            mWifiP2pOperator.connectWith(device);
         }
     }
 
@@ -387,6 +415,7 @@ public class FileShareActivity
 
     @Override
     public void notifyConnected() {
+        Log.i(TAG, "notifyConnected: ");
         Intent intent=new Intent(this,FileTransferService.class);
         intent.putStringArrayListExtra(FileTransferService.FILE_ARRAY,(ArrayList<String>)filePaths);
         intent.putExtra(FileTransferService.IS_Client,isClient);
@@ -398,6 +427,7 @@ public class FileShareActivity
 
     @Override
     public void notifyPeersChanged() {
+        Log.i(TAG, "notifyPeersChanged: ");
         peers.clear();
         peers.addAll(mWifiP2pOperator.getDeviceList());
 
