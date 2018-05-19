@@ -76,7 +76,6 @@ public class FileShareActivity
     private WifiP2pOperator mWifiP2pOperator=null;
     private List<WifiP2pDevice> peers=new ArrayList<WifiP2pDevice>();
 
-
     private ProgressDialog progressDialog;
     private TransferBroadcastReceiver mBroadcastReceiver;
 
